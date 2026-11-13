@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User guide · LLM4MOR</title>
+  <meta name="description" content="Use LLM4MOR to reformulate optimization models, review the changes, and reuse the reformulated models with new data.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/site.css"><link rel="stylesheet" href="assets/css/redesign.css">
+  <style>
+    /* Two-column reference table: prose in cells, so left-align and allow wrapping. */
+    .tablewrap table.setup { min-width: 0; }
+    .tablewrap table.setup th, .tablewrap table.setup td { text-align: left; white-space: normal; vertical-align: top; }
+    .tablewrap table.setup tbody th { font-weight: 500; color: var(--ink); white-space: nowrap; }
+  </style>
+  <script src="assets/js/site.js" defer></script>
+</head>
+<body class="detail-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="topnav" aria-label="Main navigation">
+<div class="inner"><a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>LLM4MOR</a>
+<div class="navlinks"><a href="index.html">Overview</a><a aria-current="page" class="active" href="guide.html">User Guide</a><a href="results.html">Detailed results</a><a href="case-studies.html">Case studies</a>
+</div>
+<div class="navright"><a class="chip chip-link" href="https://github.com/ZhaoWeiWang0319/LLM4MOR" target="_blank" rel="noopener" aria-label="Open the LLM4MOR source repository on GitHub (opens in a new tab)"><svg class="gh" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="chip-label">GitHub repository</span></a>
+</div>
+</div>
+</nav>
+  <main id="main">
+    <div class="pagehead">
+<div class="wrap">
+      <p class="eyebrow">User guide</p>
+      <div class="guide-intro">
+        <h1>Reformulate your first model</h1>
+        <p class="lead">Set up LLM4MOR and run the <a href="#generate">included AMPL example</a> to learn how to reformulate a model, inspect the output, and verify a solution. Then try <a href="#own-model">your own model</a>. For more details, see the <a href="https://github.com/ZhaoWeiWang0319/LLM4MOR">GitHub repository</a>.</p>
+        <p>LLM4MOR currently supports models written in AMPL (<code>.mod</code>) and MiniZinc (<code>.mzn</code>). The framework can be extended to support other mathematical programming languages.</p>
+      </div>
+      <nav class="toc" aria-label="Guide sections">
+        <a href="#requirements">Set up</a>
+        <a href="#generate">Reformulate</a>
+      </nav>
+    </div>
+</div>
+
+    <section id="requirements">
+      <div class="wrap">
+        <h2>Set up</h2>
+        <h3>Clone the repository</h3>
+        <p>With Git installed, run these commands in your terminal.</p>
+        <pre><code>git clone https://github.com/ZhaoWeiWang0319/LLM4MOR.git
+cd LLM4MOR</code></pre>
+
+        <h3>Software requirements</h3>
+        <p>Install Python 3.9 or later, then prepare the tools for the mathematical programming languages you use.</p>
+        <div class="tablewrap">
+          <table class="data setup" aria-label="Toolchain required for each mathematical programming language">
+            <thead>
+              <tr><th scope="col">Mathematical programming language</th><th scope="col">Install</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">AMPL (<code>.mod</code>)</th><td>AMPL</td></tr>
+              <tr><th scope="row">MiniZinc (<code>.mzn</code>)</th><td>MiniZinc with HiGHS (the default) or Gurobi</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Configure tool paths (optional)</h3>
+        <p>If a tool is outside your <code>PATH</code>, run <code>source init.sh</code> from the repository root in the terminal you will use for the guide. Use the command for your model format and replace the paths with your own.</p>
+        <pre><code><span class="c"># AMPL</span>
+source init.sh --ampl /path/to/ampl
+
+<span class="c"># MiniZinc with HiGHS</span>
+source init.sh --minizinc /path/to/minizinc --highs /path/to/highs
+
+<span class="c"># MiniZinc with Gurobi (use the Gurobi installation directory)</span>
+source init.sh --minizinc /path/to/minizinc --gurobi /path/to/gurobi</code></pre>
+
+        <h3>Configure your LLM</h3>
+        <p>LLM4MOR supports the OpenAI-compatible Chat Completions and Responses APIs. It uses Chat Completions by default. For instructions on using the Responses API, see the <a href="https://github.com/ZhaoWeiWang0319/LLM4MOR#4-run-with-your-own-models">GitHub repository</a>.</p>
+        <p>Set the API key, base URL, and model name for your LLM provider.</p>
+        <pre><code>export LLM_API_KEY="your-api-key"
+export LLM_BASE_URL="https://your-provider.example/v1"
+export LLM_MODEL="your-model-name"</code></pre>
+      </div>
+    </section>
+
+    <section id="generate">
+      <div class="wrap">
+        <h2>Run the AMPL example</h2>
+        <div class="step">
+          <h3 id="checks-and-repair">Reformulate the model</h3>
+          <p>Run these commands from the repository root.</p>
+          <pre><code>cd example
+python3 ../llm_analyze.py example.mod --output-dir reformulation</code></pre>
+        </div>
+
+        <div class="step">
+          <h3>Inspect the reformulation output</h3>
+          <p>Look for these files in <code>example/reformulation/</code>.</p>
+          <pre><code>example/reformulation/
+├── example.llm.mod         <span class="c"># reformulated AMPL model</span>
+├── example.llm.map.py      <span class="c"># mapping script for solution verification</span>
+├── example.llm.report.md   <span class="c"># reformulation report in Markdown</span>
+└── example.llm.report.tex  <span class="c"># reformulation report in LaTeX</span></code></pre>
+        </div>
+
+        <div class="step">
+          <h3>Verify the solution against the original model</h3>
+          <p>From the <code>example</code> directory, run the script to verify the solution supplied with the repository.</p>
+          <pre><code>bash verify.sh</code></pre>
+          <p>Open <code>output/verification.json</code> to see the result.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="own-model">
+      <div class="wrap">
+        <h2>Use your own model</h2>
+        <p>From the repository root, choose the command for your model file.</p>
+        <h3 id="generation-commands">AMPL</h3>
+        <pre id="guide-ampl"><code>python3 llm_analyze.py path/to/model.mod --output-dir outputs/ampl</code></pre>
+        <h3>MiniZinc</h3>
+        <pre id="guide-mzn"><code>python3 llm_analyze.py path/to/model.mzn --output-dir outputs/minizinc</code></pre>
+
+        <h3>Verify your solution</h3>
+        <p>Solve the reformulated model and save the result in a <code>.sol.json</code> file with <code>variables</code> and <code>objective</code> fields. If your model uses a separate data file, use the same file for solving and verification. Omit <code>--data</code> if your model contains its own data.</p>
+        <h4>AMPL</h4>
+        <pre><code>python3 verify_solution.py path/to/model.mod \
+  --sol path/to/model.sol.json \
+  --map outputs/ampl/model.llm.map.py \
+  --data path/to/instance.dat \
+  --output verification.json</code></pre>
+        <h4>MiniZinc</h4>
+        <pre><code>python3 verify_solution.py path/to/model.mzn \
+  --sol path/to/model.sol.json \
+  --map outputs/minizinc/model.llm.map.py \
+  --data path/to/instance.dzn \
+  --backend highs \
+  --output verification.json</code></pre>
+        <p>MiniZinc verification uses HiGHS by default. If you configured Gurobi, use <code>--backend gurobi</code>.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+<div class="wrap inner"><a class="brand" href="index.html">LLM4MOR</a><span>LLM for Mathematical Optimization Reformulation</span>
+<div class="footer-links"><a href="guide.html">User Guide</a><a href="https://github.com/ZhaoWeiWang0319/LLM4MOR.git">Source repository</a>
+</div>
+</div>
+</footer>
+</body>
+</html>

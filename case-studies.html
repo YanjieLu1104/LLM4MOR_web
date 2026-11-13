@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case studies — LLM4MOR</title>
+<meta name="description" content="See the original formulations, the constraints LLM4MOR changes, and the solver results for multi-day vehicle routing and module placement.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/redesign.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.css" integrity="sha384-WwGtaC6ywCHxA5cstpj/3+xIZvTez8dq2IcBQaXRkenHZ7FVVq1ZROtURwfbtTlG" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.js" integrity="sha384-a1WQdjRj162i159OYq041X6I4K8NenkrI09LlPmiHg0YOb7CR+wJOraXwK9abpnE" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/contrib/auto-render.min.js" integrity="sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz" crossorigin="anonymous" onload="renderMathInElement(document.getElementById('main'))"></script>
+</head>
+<body class="detail-page">
+
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="topnav" aria-label="Main navigation">
+<div class="inner"><a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>LLM4MOR</a>
+<div class="navlinks"><a href="index.html">Overview</a><a href="guide.html">User Guide</a><a href="results.html">Detailed results</a><a aria-current="page" class="active" href="case-studies.html">Case studies</a>
+</div>
+<div class="navright"><a class="chip chip-link" href="https://github.com/ZhaoWeiWang0319/LLM4MOR" target="_blank" rel="noopener" aria-label="Open the LLM4MOR source repository on GitHub (opens in a new tab)"><svg class="gh" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="chip-label">GitHub repository</span></a>
+</div>
+</div>
+</nav>
+
+<header class="pagehead">
+<div class="wrap"><span class="eyebrow">Case studies</span>
+<h1>How LLM4MOR reformulates two models</h1>
+</div>
+</header>
+<main id="main">
+  <div class="case-overview">
+    <div class="wrap">
+      <div class="case-gallery compact">
+        <a class="case-preview" href="#case1">
+          <div class="preview-body">
+            <span class="case-tag">ns3084303</span>
+            <h3>Vehicle routing with precedence constraints</h3>
+            <p>The reformulation tightens precedence constraints and reduces the number of rows.</p>
+            <div class="case-result">
+              <div><span class="case-result-label">Solve time</span><strong><span>≥ 3600 s</span> → 31 s</strong></div>
+              <span aria-hidden="true">↓</span>
+            </div>
+          </div>
+        </a>
+        <a class="case-preview" href="#case2">
+          <div class="preview-body">
+            <span class="case-tag">ns3025225</span>
+            <h3>Module placement on a grid</h3>
+            <p>The reformulation tightens the LP relaxation and reduces the number of binary variables and constraints.</p>
+            <div class="case-result">
+              <div><span class="case-result-label">Solve time</span><strong><span>386 s</span> → 21 s</strong></div>
+              <span aria-hidden="true">↓</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <p class="tcap">All runs use Gurobi with a 3,600-second time limit.</p>
+    </div>
+  </div>
+
+  <section id="case1">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">01</span>
+        <h2>Vehicle routing with precedence constraints</h2>
+        <span class="case-tag">ns3084303</span>
+      </div>
+
+      <div class="case-problem">
+        <p>A truck visits <strong>\(T\) locations in \(T\) days</strong>, one per day. At each stop it picks up or drops off a fixed amount of cargo, and its load must stay within its capacity \(Q.\) Choose the visit order that <strong>minimizes total driving distance</strong> and satisfies the required order between stops.</p>
+        <figure class="figure case-route-figure">
+          <svg viewBox="0 0 400 242" width="400" role="img" aria-labelledby="case-route-title">
+            <title id="case-route-title">Five stops with a possible route segment between every pair. Stops a, c, and e are pickups. Stops b and d are drop-offs. Stop a must be visited before stop b.</title>
+            <defs>
+              <marker id="case-route-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M1 1 L7 4 L1 7" fill="none" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </marker>
+            </defs>
+            <path class="case-route-legs" d="M110 87 L290 87 L341 166 L200 214 L59 166 Z M110 87 L341 166 M110 87 L200 214 M290 87 L200 214 M290 87 L59 166 M59 166 H341"/>
+            <path class="case-route-order" d="M124 69 Q200 20 276 69" marker-end="url(#case-route-arrow)"/>
+            <text class="case-route-order-label" x="200" y="29">Stop a must come before stop b</text>
+
+            <g class="case-route-pickup">
+              <circle cx="110" cy="87" r="22"/>
+              <text x="110" y="87">a +</text>
+              <circle cx="59" cy="166" r="22"/>
+              <text x="59" y="166">c +</text>
+              <circle cx="200" cy="214" r="22"/>
+              <text x="200" y="214">e +</text>
+            </g>
+            <g class="case-route-dropoff">
+              <circle cx="290" cy="87" r="22"/>
+              <text x="290" y="87">b −</text>
+              <circle cx="341" cy="166" r="22"/>
+              <text x="341" y="166">d −</text>
+            </g>
+          </svg>
+          <figcaption class="figcap">
+            <span class="case-route-legend"><span>+ Pickup</span><span>− Drop-off</span></span>
+            Solid lines show possible legs. The formulation assigns each stop to one visit day.
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="case-model">
+        <h3>Original formulation</h3>
+        <dl class="case-notation">
+          <div>
+            <dt>Sets and indices</dt>
+            <dd>Let \(S=\{1,\ldots,T\}\) be the common index set for locations \(i,j\) and visit days \(t,u.\) Let \(S_0=S\cup\{0\}\) be the set of days including the initial state. The set of precedence pairs is \(\mathcal P=\{(3,5),(4,2),(1,6),(2,7)\}.\) For each \((a,b)\in\mathcal P,\) location \(a\) must be visited before location \(b.\)</dd>
+          </div>
+          <div>
+            <dt>Parameters</dt>
+            <dd>\(T=25\) is the number of locations and visit days, and \(Q=10\) is the vehicle capacity. Let \(a_i\in[-3.5,3.5]\) denote the signed load change at location \(i.\) Let \(d_{ij}\in[1,10]\) denote the travel distance between distinct locations \(i\) and \(j.\) Distances are symmetric, with \(d_{ii}=0.\)</dd>
+          </div>
+        </dl>
+        <div class="case-model-equations case-model-grouped">
+          <h4>Decision variables</h4>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1a">Route arcs</h5>
+              <p>\(x_{ij}\) is 1 if arc \((i,j)\) is selected and 0 otherwise.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1a">
+              \[
+              \begin{aligned}
+                &amp; x_{ij}\in\{0,1\}, &amp; &amp; \forall\,i,j\in S
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1b">Visit indicators</h5>
+              <p>For \(t\in S,\) \(y_{it}\) is 1 if the truck visits location \(i\) on day \(t,\) and 0 otherwise. The entries for day zero are initial markers.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1b">
+              \[
+              \begin{aligned}
+                &amp; y_{it}\in\{0,1\}, &amp; &amp; \forall\,(i,t)\in S\times S_0
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1c">Load after each day</h5>
+              <p>\(f_t\) records the vehicle load after day \(t.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1c">
+              \[
+              \begin{aligned}
+                &amp; f_t\in\mathbb R, &amp; &amp; \forall\,t\in S_0
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <h4 id="routing-equations-1d">Objective</h4>
+          <div class="case-model-row">
+            <p>Minimize the total distance of the selected arcs. An arc contributes \(d_{ij}\) when \(x_{ij}=1.\)</p>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1d">
+              \[
+              \begin{aligned}
+                \min_{x,y,f}\quad &amp; \sum_{(i,j)\in S\times S} d_{ij}x_{ij}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <h4>Constraints</h4>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1e">Arc selection</h5>
+              <p>Require at least one selected arc leaving and at least one entering each location.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1e">
+              \[
+              \begin{aligned}
+                &amp; \sum_{j\in S}x_{ij}\ge 1, &amp; &amp; \forall\,i\in S &amp; \quad\text{(1.1)} \\
+                &amp; \sum_{i\in S}x_{ij}\ge 1, &amp; &amp; \forall\,j\in S &amp; \quad\text{(1.2)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1g">Daily assignments</h5>
+              <p>Assign each location to exactly one visit day and each visit day to exactly one location. Fix the day-zero marker \(y_{s,0}\) at 1.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1g">
+              \[
+              \begin{aligned}
+                &amp; \sum_{t\in S}y_{it}=1, &amp; &amp; \forall\,i\in S &amp; \quad\text{(1.3)} \\
+                &amp; \sum_{i\in S}y_{it}=1, &amp; &amp; \forall\,t\in S &amp; \quad\text{(1.4)} \\
+                &amp; y_{s,0}=1 &amp; &amp; &amp; \quad\text{(1.5)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1j">Route and visit days</h5>
+              <p>If arc \((i,j)\) is selected and the truck visits \(i\) on day \(t-1,\) it must visit \(j\) on day \(t.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1j">
+              \[
+              \begin{aligned}
+                &amp; x_{ij}+y_{i,t-1}\le 1+y_{jt}, &amp; &amp; \forall\,i,j\in S,\quad \forall\,t\in\{2,\ldots,T\} &amp; \quad\text{(1.6)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1k"><span class="case-constraint-highlight">Visit order</span></h5>
+              <p>For each \((a,b)\in\mathcal P,\) compare the two visit days. The daily assignments make the days distinct, so \(a\) must precede \(b.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1k">
+              \[
+              \begin{aligned}
+                &amp; \textcolor{#255ba8}{\sum_{t\in S}t\,y_{at}\le\sum_{t\in S}t\,y_{bt}}, &amp; &amp; \forall\,(a,b)\in\mathcal P &amp; \quad\text{(1.7)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="routing-equations-1l">Vehicle load</h5>
+              <p>Start with zero load, add the signed load change at the location visited each day, and enforce capacity \(Q.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="routing-equations-1l">
+              \[
+              \begin{aligned}
+                &amp; f_0=0 &amp; &amp; &amp; \quad\text{(1.8)} \\
+                &amp; f_t=f_{t-1}+\sum_{i\in S}a_i y_{it}, &amp; &amp; \forall\,t\in S &amp; \quad\text{(1.9)} \\
+                &amp; f_t\le Q, &amp; &amp; \forall\,t\in S &amp; \quad\text{(1.10)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="case-rewrite">
+        <h3>Reformulate the route and visit order</h3>
+        <div class="case-technique">
+          <h4 class="case-constraint-highlight">Route arcs&nbsp;· Link visits by position</h4>
+          <p>The original formulation (1.6) links each arc to the visit sequence separately for every day. A position-based formulation uses one continuous visit position \(p_i\) per location and links each selected arc directly to its successor position.</p>
+          <div class="cards case-constraint-pair">
+            <div class="formula" tabindex="0" role="region" aria-label="Original arc linking by day">
+              <span class="lead-in">Original&nbsp;· One implication per arc and day</span>
+              <div class="case-equation-line">
+                <span>\(x_{ij}+y_{i,t-1}\le 1+y_{jt},\)</span>
+                <span>\(\forall\,i,j\in S,\quad t=2,\ldots,T\)</span>
+              </div>
+            </div>
+            <div class="case-equivalence"><span aria-hidden="true">→</span>Same optimal value</div>
+            <div class="formula" tabindex="0" role="region" aria-label="Reformulated arc linking by position">
+              <span class="lead-in">Reformulated&nbsp;· Two bounds per arc</span>
+              <div class="case-equation-line">
+                <span>\(\displaystyle p_i=\sum_{t\in S}t\,y_{it},\)</span>
+                <span>\(q_i=p_i+1-Ty_{iT}\)</span>
+              </div>
+              <div class="case-equation-line">
+                <span>\(\lvert p_j-q_i\rvert\le (T-1)(1-x_{ij}),\)</span>
+                <span>\(\forall\,i,j\in S,\ i\ne j\)</span>
+              </div>
+            </div>
+          </div>
+          <div class="case-proof">
+            <h5>Proof</h5>
+            <p><strong>Equivalence of optimal values.</strong> The assignment constraints define a visit order \(v_1,\ldots,v_T\). For \(t&lt;T\), (1.6) permits only the arc from \(v_t\) to \(v_{t+1}\), and (1.1) requires it. Constraint (1.2) then forces the arc from \(v_T\) back to \(v_1\). Deleting any extra arcs from \(v_T\) leaves a feasible cycle and cannot increase the objective because distances are nonnegative.</p>
+            <p>This cycle satisfies the reformulated bounds: each selected arc has \(p_j=q_i\), since \(q_i\) is the next position with wraparound from \(T\) to 1. For unselected arcs, \(p_j,q_i\in[1,T]\) implies \(\lvert p_j-q_i\rvert\le T-1\). Conversely, the reformulation requires one incoming and one outgoing arc per location, and \(p_j=q_i\) forces those arcs to follow the same cycle. That cycle satisfies (1.1), (1.2), and (1.6) with the same objective value.</p>
+          </div>
+          <p>The arc-linking block goes from \(T^2(T-1)\) rows to \(2T(T-1)\) bounds and \(T\) position definitions.</p>
+          <dl class="case-count">
+            <div>
+              <dt>Arc-linking rows</dt>
+              <dd><span>15,000</span> → 1,200</dd>
+            </div>
+            <div>
+              <dt>New position variables and defining rows</dt>
+              <dd>25 <small>of each</small></dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="case-technique">
+          <h4 class="case-constraint-highlight">Tighten the visit-order constraints</h4>
+          <p>The original constraint (1.7) compares the days on which the truck visits \(a\) and \(b.\)</p>
+          <p>The reformulation checks the order one day at a time. If the truck has visited \(b\) by day \(t,\) it must have visited \(a\) by day \(t-1.\) Each cumulative sum counts visits to one stop up to the specified day.</p>
+          <div class="cards case-constraint-pair">
+            <div class="formula" tabindex="0" role="region" aria-label="Original visit-order constraints">
+              <span class="lead-in">Original&nbsp;· Compare visit days</span>
+              <div class="case-equation-line">
+                <span>\(\displaystyle\sum_{t\in S}t\,y_{at}\le\sum_{t\in S}t\,y_{bt},\)</span>
+                <span>\(\forall\,(a,b)\in\mathcal P\)</span>
+              </div>
+            </div>
+            <div class="case-equivalence"><span aria-hidden="true">⇔</span>Integer equivalence</div>
+            <div class="formula" tabindex="0" role="region" aria-label="Reformulated visit-order constraints">
+              <span class="lead-in">Reformulated&nbsp;· Enforce order day by day</span>
+              <div class="case-equation-line">
+                <span>\(\displaystyle\sum_{u=1}^{t}y_{bu}\le\sum_{u=1}^{t-1}y_{au},\)</span>
+                <span>\(\forall\,(a,b)\in\mathcal P,\quad \forall\,t\in S\)</span>
+              </div>
+            </div>
+          </div>
+          <div class="case-proof">
+            <h5>Proof</h5>
+            <p><strong>Integer equivalence.</strong> Constraints (1.3) and (1.4) assign each stop a distinct visit day, so (1.7) requires \(a\) to precede \(b.\) On the day the truck visits \(b,\) the cumulative constraint requires \(a\) to have been visited by the previous day. Conversely, visiting \(a\) before \(b\) satisfies every cumulative constraint for the pair.</p>
+            <p><strong>LP strengthening.</strong> Summing the daily inequalities and using the unit visit totals in (1.3) gives \(\sum_{t\in S}t\,y_{bt}\ge 1+\sum_{t\in S}t\,y_{at},\quad \forall\,(a,b)\in\mathcal P.\) Constraint (1.7) allows equal weighted average visit days, which the cumulative constraints exclude.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="case-performance" role="group" aria-labelledby="case1-timing-title">
+        <h3 id="case1-timing-title">Solve and reformulation times</h3>
+        <div class="case-timing">
+          <figure class="case-runtime card">
+            <h4>Solver run time</h4>
+            <div class="speed-chart" role="img" aria-label="With the original formulation, Gurobi reaches the 3600-second time limit without proving optimality. With the reformulation, it reports optimality in 31 seconds.">
+              <div class="speed-row">
+                <span>Original</span>
+                <div class="track"><div class="bar original-bar timed-out" style="width:100%"></div></div>
+                <b>≥ 3600 s</b>
+              </div>
+              <div class="speed-row">
+                <span>Reformulated</span>
+                <div class="track"><div class="bar" style="width:0.8550%"></div></div>
+                <b>31 s</b>
+              </div>
+            </div>
+          </figure>
+          <dl class="case-reformulation-time card">
+            <dt>Reformulation time</dt>
+            <dd>175 s</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="case-size">
+        <h3 id="routing-presolve">Model size with Gurobi presolve or reformulation</h3>
+        <div class="tablewrap" role="region" aria-labelledby="routing-presolve" tabindex="0">
+          <table class="data" aria-describedby="routing-presolve-note">
+            <thead>
+              <tr>
+                <th scope="col" style="text-align:left">Metric</th>
+                <th scope="col">Original</th>
+                <th scope="col">Original after Gurobi presolve</th>
+                <th scope="col">Reformulated before presolve</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Total variables</th>
+                <td>1,301</td>
+                <td>1,244</td>
+                <td>1,326</td>
+              </tr>
+              <tr>
+                <th scope="row">Constraint rows</th>
+                <td>15,156</td>
+                <td>14,432</td>
+                <td class="best">1,481</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="tcap" id="routing-presolve-note">The before-presolve columns count declared variables and explicit constraints in the AMPL source. In the seed 1 run, AMPL passes 1,275 columns and 15,129 rows to Gurobi 13.0.3 before Gurobi presolve.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="case2">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">02</span>
+        <h2>Module placement on a grid</h2>
+        <span class="case-tag">ns3025225</span>
+      </div>
+
+      <div class="case-problem">
+        <div>
+          <h3>The placement problem</h3>
+          <p>Place <strong>\(L\) layers with \(B\) modules each</strong> on a shared board with \(H\) rows and \(W\) columns, with at most one module per cell. Within each layer, the highest and lowest occupied rows may differ by at most \(s.\)</p>
+          <p>Each module connects to a fixed port. Choose the cells so that the largest horizontal distance between a module and its port is as small as possible.</p>
+        </div>
+        <figure class="figure case-placement-figure">
+          <svg viewBox="0 0 410 244" width="410" role="img" aria-labelledby="case-placement-title">
+            <title id="case-placement-title">An illustrative placement on a shared grid. Blue modules belong to layer 1 and green modules belong to layer 2. A bracket marks the row span of layer 1. Horizontal segments measure offsets to the fixed ports, with the largest shown in bold.</title>
+
+            <rect class="case-placement-board" x="90" y="30" width="294" height="170"/>
+            <path class="case-placement-grid" d="M132 30V200 M174 30V200 M216 30V200 M258 30V200 M300 30V200 M342 30V200 M90 64H384 M90 98H384 M90 132H384 M90 166H384"/>
+            <path class="case-placement-guides" d="M170 30V210 M253 30V210"/>
+
+            <g class="case-placement-layer-one">
+              <rect x="144" y="140" width="18" height="18" rx="3"/>
+              <text x="153" y="149">j</text>
+              <rect x="270" y="106" width="18" height="18" rx="3"/>
+              <text x="279" y="115">k</text>
+            </g>
+            <g class="case-placement-layer-two">
+              <rect x="228" y="38" width="18" height="18" rx="3"/>
+              <text x="237" y="47">j</text>
+              <rect x="270" y="72" width="18" height="18" rx="3"/>
+              <text x="279" y="81">k</text>
+            </g>
+
+            <path class="case-placement-offsets" d="M153 162H170 M153 159V165 M170 159V165 M253 128H279 M253 125V131 M279 125V131 M253 94H279 M253 91V97 M279 91V97"/>
+            <path class="case-placement-longest" d="M170 60H237 M170 57V63 M237 57V63"/>
+            <path class="case-placement-span" d="M81 115H74V149H81"/>
+            <text class="case-placement-span-label" x="66" y="125">Layer 1<tspan x="66" dy="14">row span</tspan></text>
+
+            <g class="case-placement-ports">
+              <circle cx="170" cy="210" r="3.5"/>
+              <text x="170" y="229">Port j</text>
+              <circle cx="253" cy="210" r="3.5"/>
+              <text x="253" y="229">Port k</text>
+            </g>
+          </svg>
+          <figcaption class="figcap">
+            <span class="case-placement-legend">
+              <span class="case-placement-layer-one">Layer 1</span>
+              <span class="case-placement-layer-two">Layer 2</span>
+              <span class="case-placement-max">Largest offset</span>
+            </span>
+            In this example, four modules occupy distinct cells. Dotted guides mark the fixed port positions.
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="case-model">
+        <h3>Original formulation</h3>
+        <dl class="case-notation">
+          <div>
+            <dt>Sets and indices</dt>
+            <dd>Let \(i\in I=\{1,\ldots,L\}\) index layers and \(j,k\in J=\{1,\ldots,B\}\) index modules within a layer. A cell \((m,n)\in R\times C\) has row \(m\in R=\{1,\ldots,H\}\) and column \(n\in C=\{1,\ldots,W\}.\)</dd>
+          </div>
+          <div>
+            <dt>Parameters</dt>
+            <dd>The instance has \(L=5\) layers, \(B=65\) modules per layer, \(H=13\) rows and \(W=25\) columns. The maximum difference between module rows in a layer is \(s=3.\) The upper bound on the signed offset is \(D=1.\) The port coordinates are \(a_j=Wj/(B+1),\ \forall\,j\in J.\) The signed offsets from columns to ports are \(d_{jn}=a_j-(n-\tfrac12),\ \forall\,(j,n)\in J\times C.\)</dd>
+          </div>
+        </dl>
+        <div class="case-model-equations case-model-grouped">
+          <h4>Decision variables</h4>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-variable-cell">Cell placement</h5>
+              <p>\(p_{ijmn}\) is 1 if module \(j\) of layer \(i\) is assigned to cell \((m,n)\) and 0 otherwise.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-variable-cell">
+              \[p_{ijmn}\in\{0,1\},\quad \forall\,(i,j,m,n)\in I\times J\times R\times C\]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-variable-bound">Distance bound</h5>
+              <p>\(M\) is a continuous upper bound on every module’s absolute horizontal offset.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-variable-bound">
+              \[M\in\mathbb R\]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-derived-quantities">Derived quantities</h5>
+              <p>In an integer placement, \(q_{ij}\) is the signed offset of the assigned cell and \(y_{ij}\) is its row index.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-derived-quantities">
+              \[
+              \begin{aligned}
+                q_{ij} &amp;= \sum_{(m,n)\in R\times C}d_{jn}p_{ijmn}, &amp; &amp; \forall\,(i,j)\in I\times J, \\
+                y_{ij} &amp;= \sum_{(m,n)\in R\times C}m\,p_{ijmn}, &amp; &amp; \forall\,(i,j)\in I\times J
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <h4 id="placement-equations-2a">Objective</h4>
+          <div class="case-model-row">
+            <p>Minimizing \(M\) minimizes the largest absolute horizontal offset.</p>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-equations-2a">
+              \[\min_{p,M}\quad M\]
+            </div>
+          </div>
+          <h4>Constraints</h4>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-equations-2b">Cell assignments</h5>
+              <p>Each module uses at most one cell, each cell holds at most one module, and the total number of placements is \(LB.\) Together these conditions assign exactly one cell to each module.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-equations-2b">
+              \[
+              \begin{aligned}
+                &amp; \sum_{(m,n)\in R\times C}p_{ijmn}\le 1, &amp; &amp; \forall\,(i,j)\in I\times J &amp; \quad\text{(2.1)} \\
+                &amp; \sum_{(i,j)\in I\times J}p_{ijmn}\le 1, &amp; &amp; \forall\,(m,n)\in R\times C &amp; \quad\text{(2.2)} \\
+                &amp; \sum_{(i,j)\in I\times J}\sum_{(m,n)\in R\times C}p_{ijmn}=LB &amp; &amp; &amp; \quad\text{(2.3)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-equations-2e"><span class="case-constraint-highlight">Distance bounds</span></h5>
+              <p>For the selected cell \((m,n),\) the two inequalities require \(M\ge d_{jn}\) and \(M\ge -d_{jn}.\) Together they give \(M\ge |d_{jn}|.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-equations-2e">
+              \[
+              \begin{aligned}
+                &amp; \textcolor{#255ba8}{M\ge d_{jn}p_{ijmn}}, &amp; &amp; \forall\,(i,j,m,n)\in I\times J\times R\times C &amp; \quad\text{(2.4)} \\
+                &amp; \textcolor{#255ba8}{M\ge -d_{jn}p_{ijmn}}, &amp; &amp; \forall\,(i,j,m,n)\in I\times J\times R\times C &amp; \quad\text{(2.5)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-equations-2g">Signed offset limit</h5>
+              <p>Require \(q_{ij}\le D,\) limiting how far to the left of its port a module can be placed.</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-equations-2g">
+              \[
+              \begin{aligned}
+                &amp; q_{ij}\le D, &amp; &amp; \forall\,(i,j)\in I\times J &amp; \quad\text{(2.6)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-equations-2h"><span class="case-constraint-highlight">Layer height</span></h5>
+              <p>Limit the difference between the row indices of any two modules in the same layer to \(s.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-equations-2h">
+              \[
+              \begin{aligned}
+                &amp; \textcolor{#255ba8}{-s\le y_{ij}-y_{ik}\le s}, &amp; &amp; \forall\,i\in I,\quad \forall\,j,k\in J,\ j&lt;k &amp; \quad\text{(2.7)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+          <div class="case-model-row">
+            <div>
+              <h5 id="placement-equations-2i">Row limit</h5>
+              <p>A module in layer \(i\) can only use rows numbered at most \(is.\)</p>
+            </div>
+            <div class="formula" tabindex="0" role="region" aria-labelledby="placement-equations-2i">
+              \[
+              \begin{aligned}
+                &amp; m\,p_{ijmn}\le is, &amp; &amp; \forall\,(i,j,m,n)\in I\times J\times R\times C &amp; \quad\text{(2.8)}
+              \end{aligned}
+              \]
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="case-rewrite">
+        <h3>Tighten bounds and reduce the model size</h3>
+        <div class="case-technique">
+          <h4 class="case-constraint-highlight">Distance&nbsp;· One bound per module</h4>
+          <p>LLM4MOR combines the cell-level bounds on \(M\) in (2.4) and (2.5) into one bound per module.</p>
+          <div class="cards case-constraint-pair">
+            <div class="formula" tabindex="0" role="region" aria-label="Original distance bounds">
+              <span class="lead-in">Original&nbsp;· Two bounds per candidate cell</span>
+              <div class="case-equation-line">
+                <span>\(M\ge d_{jn}p_{ijmn},\quad M\ge -d_{jn}p_{ijmn},\)</span>
+                <span>\(\forall\,(i,j,m,n)\in I\times J\times R\times C\)</span>
+              </div>
+            </div>
+            <div class="case-equivalence"><span aria-hidden="true">⇔</span>Integer equivalence</div>
+            <div class="formula" tabindex="0" role="region" aria-label="Reformulated distance bound">
+              <span class="lead-in">Reformulated&nbsp;· Sum over cells</span>
+              <div class="case-equation-line">
+                <span>\(\displaystyle M\ge\sum_{(m,n)\in R\times C}|d_{jn}|p_{ijmn},\)</span>
+                <span>\(\forall\,(i,j)\in I\times J\)</span>
+              </div>
+            </div>
+          </div>
+          <div class="case-proof">
+            <h5>Proof</h5>
+            <p><strong>Integer equivalence.</strong> Constraints (2.1) and (2.3) require exactly one selected cell per module. Only that cell contributes to the sum, so both formulations require \(M\) to be at least its absolute offset.</p>
+            <p><strong>LP strengthening.</strong> Each term \(|d_{jn}|p_{ijmn}\) is nonnegative, so the sum implies both original bounds for every cell. The sum exceeds the largest individual term whenever at least two cells contribute positive terms.</p>
+          </div>
+          <dl class="case-count">
+            <div>
+              <dt>Distance constraint rows</dt>
+              <dd><span>211,250</span> → 325</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="case-technique">
+          <h4 class="case-constraint-highlight">Height&nbsp;· One shared interval per layer</h4>
+          <div class="split">
+            <div>
+              <p>The original constraints (2.7) compare the row positions of every pair of modules in a layer.</p>
+              <p>The reformulation considers the layer as a whole. If all its module rows fit in an interval of length \(s,\) any two rows differ by at most \(s.\) The bounds below place each row in layer \(i\) between the shared endpoints \(b_i\) and \(b_i+s.\)</p>
+            </div>
+            <figure class="interval-figure">
+              <svg viewBox="0 0 300 170" width="300" role="img" aria-label="An interval of height s containing the module rows of one layer">
+                <rect x="40" y="40" width="220" height="88" fill="#edf3fc"/>
+                <line x1="40" y1="40" x2="260" y2="40" stroke="#1f4e9c" stroke-width="1.6"/>
+                <line x1="40" y1="128" x2="260" y2="128" stroke="#1f4e9c" stroke-width="1.6"/>
+                <line x1="40" y1="40" x2="40" y2="128" stroke="#c6d8f2" stroke-width="1"/>
+                <line x1="260" y1="40" x2="260" y2="128" stroke="#c6d8f2" stroke-width="1"/>
+                <circle cx="76" cy="112" r="3.4" fill="#16233a"/>
+                <circle cx="126" cy="66" r="3.4" fill="#16233a"/>
+                <circle cx="176" cy="100" r="3.4" fill="#16233a"/>
+                <circle cx="226" cy="56" r="3.4" fill="#16233a"/>
+                <text x="34" y="40" text-anchor="end" dominant-baseline="central" font-size="11" fill="#1f4e9c" font-family="-apple-system, Segoe UI, sans-serif">bᵢ + s</text>
+                <text x="34" y="128" text-anchor="end" dominant-baseline="central" font-size="11" fill="#1f4e9c" font-family="-apple-system, Segoe UI, sans-serif">bᵢ</text>
+                <line x1="272" y1="40" x2="272" y2="128" stroke="#1f4e9c" stroke-width="1.2"/>
+                <line x1="268" y1="40" x2="276" y2="40" stroke="#1f4e9c" stroke-width="1.2"/>
+                <line x1="268" y1="128" x2="276" y2="128" stroke="#1f4e9c" stroke-width="1.2"/>
+                <text x="284" y="84" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#1f4e9c" font-family="-apple-system, Segoe UI, sans-serif">s</text>
+                <text x="150" y="152" text-anchor="middle" font-size="10" fill="#5d6675" font-family="-apple-system, Segoe UI, sans-serif">row numbers of one layer's modules</text>
+              </svg>
+              <figcaption class="figcap">All selected rows in a layer fit in the same interval.</figcaption>
+            </figure>
+          </div>
+          <div class="cards case-constraint-pair">
+            <div class="formula" tabindex="0" role="region" aria-label="Original pairwise height constraints">
+              <span class="lead-in">Original&nbsp;· Compare module pairs</span>
+              <div class="case-equation-line">
+                <span>\(-s\le y_{ij}-y_{ik}\le s,\)</span>
+                <span>\(\forall\,i\in I,\quad \forall\,j,k\in J,\ j&lt;k\)</span>
+              </div>
+            </div>
+            <div class="case-equivalence"><span aria-hidden="true">⇔</span>Equivalent row values</div>
+            <div class="formula" tabindex="0" role="region" aria-label="Reformulated height constraints">
+              <span class="lead-in">Reformulated&nbsp;· Bound each module row</span>
+              <div class="case-equation-line">
+                <span>\(b_i\le y_{ij}\le b_i+s,\)</span>
+                <span>\(\forall\,(i,j)\in I\times J\)</span>
+              </div>
+              <div class="case-equation-line">
+                <span>\(b_i\in\mathbb R,\)</span>
+                <span>\(\forall\,i\in I\)</span>
+              </div>
+            </div>
+          </div>
+          <div class="case-proof">
+            <h5>Proof</h5>
+            <p>The pairwise bounds (2.7) hold exactly when \(\max_{j\in J} y_{ij}-\min_{j\in J} y_{ij}\le s,\quad \forall\,i\in I.\) In that case, choosing \(b_i=\min_{j\in J} y_{ij},\quad \forall\,i\in I,\) gives a valid interval. Conversely, any two row values in the same interval differ by at most \(s.\)</p>
+          </div>
+          <dl class="case-count">
+            <div>
+              <dt>Height constraint rows</dt>
+              <dd><span>20,800</span> → 650</dd>
+            </div>
+            <div>
+              <dt>New continuous variables \(b_i\)</dt>
+              <dd>+5 <small>one per layer</small></dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="case-technique">
+          <h4 class="case-constraint-highlight">Placement domain&nbsp;· Use grid capacity to tighten row bounds</h4>
+          <p>The cell capacity constraint (2.2), the within-layer span limit (2.7), and the layer row cap (2.8) together identify rows that no module in a layer can use. LLM4MOR omits the corresponding binary placement variables when building the model.</p>
+          <div class="case-proof">
+            <h5>Proof</h5>
+            <p>In any feasible integer placement, let \(u_i=\max_{1\le h\le i,\ j\in J}y_{hj}\) be the highest row occupied by the first \(i\) layers. These layers occupy \(iB\) distinct cells, and rows 1 through \(u_i\) contain \(Wu_i\) cells. Thus</p>
+            <div>
+              \[iB\le Wu_i\quad\Longrightarrow\quad u_i\ge r_i:=\left\lceil\frac{iB}{W}\right\rceil.\]
+            </div>
+            <p>If \(r_i&gt;(i-1)s\), the row caps in (2.8) prevent earlier layers from reaching row \(r_i\). Layer \(i\) must therefore attain \(u_i\). The span bound (2.7) then gives, for each module \(j\) in that layer,</p>
+            <div>
+              \[y_{ij}\ge u_i-s\ge r_i-s.\]
+            </div>
+            <p>Use \(\ell_i=\max(1,r_i-s)\) in this case and \(\ell_i=1\) otherwise. Together with the original row cap and board height, this gives the candidate row set</p>
+            <div>
+              \[R_i=\{m\in R:\ell_i\le m\le\min(H,is)\}.\]
+            </div>
+            <p>Declare \(p_{ijmn}\) only for rows \(m\in R_i\). Every omitted variable is zero in all feasible integer placements, so the reduction preserves those placements.</p>
+          </div>
+          <p>Applying them after filtering cells by the row cap and signed offset limit cuts the remaining placement variables by 51.2%.</p>
+          <dl class="case-count">
+            <div>
+              <dt>Binary placement variables after basic cell filtering</dt>
+              <dd><span>37,711</span> → 18,417</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="case-performance" role="group" aria-labelledby="case2-timing-title">
+        <h3 id="case2-timing-title">Solve and reformulation times</h3>
+        <div class="case-timing">
+          <figure class="case-runtime card">
+            <h4>Solver run time</h4>
+            <div class="speed-chart" role="img" aria-label="Gurobi proves optimality in 386 seconds with the original formulation and in 21 seconds with the reformulation.">
+              <div class="speed-row">
+                <span>Original</span>
+                <div class="track"><div class="bar original-bar" style="width:100%"></div></div>
+                <b>386 s</b>
+              </div>
+              <div class="speed-row">
+                <span>Reformulated</span>
+                <div class="track"><div class="bar" style="width:5.4052%"></div></div>
+                <b>21 s</b>
+              </div>
+            </div>
+          </figure>
+          <dl class="case-reformulation-time card">
+            <dt>Reformulation time</dt>
+            <dd>223 s</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="case-size">
+        <h3 id="placement-presolve">Model size with Gurobi presolve or reformulation</h3>
+        <p><strong>On this instance, LLM4MOR finds problem-specific reductions beyond those from Gurobi presolve.</strong></p>
+        <div class="tablewrap" role="region" aria-labelledby="placement-presolve" tabindex="0">
+          <table class="data">
+            <thead>
+              <tr>
+                <th scope="col" style="text-align:left">Metric</th>
+                <th scope="col">Original</th>
+                <th scope="col">Original after Gurobi presolve</th>
+                <th scope="col">Reformulated before presolve</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Binary variables</th>
+                <td>105,625</td>
+                <td>37,711</td>
+                <td class="best">18,417</td>
+              </tr>
+              <tr>
+                <th scope="row">Constraint rows</th>
+                <td>338,651</td>
+                <td>18,123</td>
+                <td class="best">1,625</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+<div class="wrap inner"><a class="brand" href="index.html">LLM4MOR</a><span>LLM for Mathematical Optimization Reformulation</span>
+<div class="footer-links"><a href="guide.html">User Guide</a><a href="https://github.com/ZhaoWeiWang0319/LLM4MOR.git">Source repository</a>
+</div>
+</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LLM for Mathematical Optimization Reformulation — LLM4MOR</title><meta name="description" content="LLM for Mathematical Optimization Reformulation, with results on MIPLIB2017 models and a guide to getting started."><link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/css/site.css"><link rel="stylesheet" href="assets/css/redesign.css">
+</head>
+<body class=""><a class="skip-link" href="#main">Skip to content</a>
+<nav class="topnav" aria-label="Main navigation">
+<div class="inner"><a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>LLM4MOR</a>
+<div class="navlinks"><a aria-current="page" class="active" href="index.html">Overview</a><a href="guide.html">User Guide</a><a href="results.html">Detailed results</a><a href="case-studies.html">Case studies</a>
+</div>
+<div class="navright"><a class="chip chip-link" href="https://github.com/ZhaoWeiWang0319/LLM4MOR" target="_blank" rel="noopener" aria-label="Open the LLM4MOR source repository on GitHub (opens in a new tab)"><svg class="gh" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="chip-label">GitHub repository</span></a>
+</div>
+</div>
+</nav>
+<main id="main">
+  <div class="overview-opening">
+    <div class="wrap">
+      <header class="project-opening" aria-labelledby="project-title">
+        <h1 id="project-title">LLM4<span>MOR</span></h1>
+        <p class="project-tagline">LLM for Mathematical Optimization Reformulation</p>
+        <div class="project-credits">
+          <div class="project-authors">
+            <strong>Authors</strong>
+            <ul role="list">
+              <li>Zhao-Wei Wang</li>
+              <li>Yan-Jie Lu</li>
+              <li>Wei-Kun Chen</li>
+              <li>Yu-Hong Dai</li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <section class="overview-summary" id="evidence" aria-label="Numerical results">
+        <dl class="overview-stats">
+          <div>
+            <dt>Mathematical optimization models with specific input data</dt>
+            <dd>575</dd>
+          </div>
+          <div>
+            <dt>Overall solver speedup</dt>
+            <dd>2.3×</dd>
+          </div>
+          <div>
+            <dt>Solver speedup on hard instances (≥&nbsp;1,000&nbsp;s)</dt>
+            <dd>6.9×</dd>
+          </div>
+          <div>
+            <dt>More instances solved to optimality</dt>
+            <dd>+32</dd>
+          </div>
+        </dl>
+        <p class="chart-note">The evaluation uses model files and data from MIPLIB 2017. GPT-6-Astra generates the reformulations. Gurobi solves the instances with a time limit of 3,600 seconds per run.</p>
+      </section>
+
+      <section class="overview-summary" id="workflow" aria-labelledby="opening-workflow">
+        <h2 id="opening-workflow">How it works</h2>
+        <div class="workflow-diagram">
+          <div class="workflow-node">
+            <h3>Mathematical optimization models</h3>
+          </div>
+          <span class="workflow-arrow" aria-hidden="true">↓</span>
+          <div class="workflow-analysis">
+            <h3>Reformulation</h3>
+            <ol class="analysis-steps" role="list">
+              <li>
+                <h4>Check the input</h4>
+                <p>Check the syntax of the original model.</p>
+              </li>
+              <li>
+                <h4>Reformulate the model</h4>
+                <p>Ask a large language model (LLM) to generate a reformulated model and a script that maps solutions back to the original variables.</p>
+              </li>
+              <li>
+                <h4>Check the reformulated model and mapping script</h4>
+                <p>Check the syntax of the reformulated model and mapping script. Test the mapping when suitable input is available.</p>
+              </li>
+            </ol>
+            <div class="workflow-branches">
+              <p class="workflow-feedback">Validation failed · Return to the LLM for repair</p>
+              <span class="workflow-pass-stem" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div class="workflow-branches workflow-exit">
+            <svg class="workflow-pass-connector" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M 100 0 V 5 Q 100 13 95 13 H 5 Q 0 13 0 21 V 26" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <div class="workflow-pass">
+              <span>Validation successful</span>
+              <span class="workflow-arrow" aria-hidden="true">↓</span>
+            </div>
+          </div>
+          <div class="workflow-outputs" aria-labelledby="workflow-outputs-title">
+            <h3 id="workflow-outputs-title">Outputs</h3>
+            <ul role="list">
+              <li>
+                <strong>Reformulated model</strong>
+                <span>Solve the optimization problem with the reformulated model.</span>
+              </li>
+              <li>
+                <strong>Mapping script</strong>
+                <span>Map a solution of the reformulated model back to the original variables.</span>
+              </li>
+              <li>
+                <strong>Reformulation report</strong>
+                <span>Review the techniques used during reformulation.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="importance-hero" id="why">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">01 / Why reformulate</span>
+        <h2>Why the formulation matters</h2>
+        <p class="importance-context">Solve times can vary substantially across formulations of the same optimization problem. A formulation with fewer variables or constraints can reduce the solver’s computational effort, while a formulation with a stronger relaxation can give the solver tighter bounds on the optimal objective value.</p>
+        <p class="importance-context">To improve solver performance, modeling and optimization experts often exploit problem structure and apply established techniques to reformulate existing models. Such reformulations can yield equivalent formulations that are better suited to optimization solvers.</p>
+      </div>
+      <div class="importance-example">
+        <h3>A reformulation example</h3>
+        <div class="placement-models">
+          <div>
+            <h4>Original</h4>
+            <p>
+              <math><msubsup><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></msubsup><msub><mi>x</mi><mi>i</mi></msub><mo>≤</mo><mn>1</mn></math>
+              <math><mi>y</mi><mo>≥</mo><msub><mi>x</mi><mi>i</mi></msub><mo>,</mo><mspace width="0.4em"/><mo>∀</mo><mi>i</mi></math>
+              <math><msub><mi>x</mi><mi>i</mi></msub><mo>∈</mo><mo>{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo>}</mo><mo>,</mo><mspace width="0.4em"/><mi>i</mi><mo>=</mo><mn>1</mn><mo>,</mo><mo>…</mo><mo>,</mo><mi>n</mi></math>
+            </p>
+          </div>
+          <span aria-hidden="true">→</span>
+          <div>
+            <h4>Reformulated</h4>
+            <p>
+              <math><msubsup><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></msubsup><msub><mi>x</mi><mi>i</mi></msub><mo>≤</mo><mn>1</mn></math>
+              <math><mi>y</mi><mo>≥</mo><msubsup><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></msubsup><msub><mi>x</mi><mi>i</mi></msub></math>
+              <math><msub><mi>x</mi><mi>i</mi></msub><mo>∈</mo><mo>{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo>}</mo><mo>,</mo><mspace width="0.4em"/><mi>i</mi><mo>=</mo><mn>1</mn><mo>,</mo><mo>…</mo><mo>,</mo><mi>n</mi></math>
+            </p>
+          </div>
+        </div>
+        <dl class="reformulation-results">
+          <div>
+            <dt>Fewer constraints</dt>
+            <dd>
+              <strong><math><mi>n</mi><mo>+</mo><mn>1</mn><mo>→</mo><mn>2</mn></math></strong>
+              <p><math><mi>n</mi><mo>−</mo><mn>1</mn></math> fewer constraints.</p>
+            </dd>
+          </div>
+          <div>
+            <dt>Stronger LP relaxation</dt>
+            <dd>
+              <p>For fractional choices, the sum can exceed the largest individual value.</p>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="tinted" id="why-llm">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">02 / The approach</span>
+        <h2>Why use an LLM for reformulation</h2>
+        <p>LLMs have <strong>broad knowledge of mathematical modeling and optimization</strong>, including a range of reformulation techniques. They can exploit problem structure to select and apply techniques that can reduce solve time.</p>
+      </div>
+      <div class="card">
+        <h3>Techniques LLM4MOR uses</h3>
+        <dl class="llm-techniques">
+          <div>
+            <dt>Presolve</dt>
+            <dd>Simplify the formulation before solving to improve solver performance.</dd>
+          </div>
+          <div>
+            <dt>Cutting planes</dt>
+            <dd>Strengthen the relaxation to help the solver obtain tighter bounds.</dd>
+          </div>
+        </dl>
+        <p>The framework can be extended to support more techniques.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tool">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">03 / The tool</span>
+        <h2>What LLM4MOR does</h2>
+        <p>Give LLM4MOR a model file. It reformulates the model with the aim of reducing solve time. Once the reformulated model passes the checks, you can reuse it to solve instances with data specific to each scenario.</p>
+        <div class="actions">
+          <a class="btn primary" href="guide.html">User Guide</a>
+          <a class="btn" href="https://github.com/ZhaoWeiWang0319/LLM4MOR.git">Source repository ↗</a>
+        </div>
+      </div>
+      <ol class="capabilities" id="verification" role="list">
+        <li class="card">
+          <h3>Reformulate the model</h3>
+          <ul>
+            <li>Generate a syntactically valid reformulated model file.</li>
+            <li>Provide a mapping script to help verify the solution.</li>
+            <li>Provide a report that explains the reformulation.</li>
+          </ul>
+          <span class="workflow-arrow capability-arrow" aria-hidden="true">↓</span>
+        </li>
+        <li class="card">
+          <h3>Review and verify</h3>
+          <ul>
+            <li>Review the model changes described in the reformulation report.</li>
+            <li>Use the mapping script to help verify the solution in the original model.</li>
+          </ul>
+          <span class="workflow-arrow capability-arrow" aria-hidden="true">↓</span>
+        </li>
+        <li class="card">
+          <h3>Reuse with new data</h3>
+          <ul>
+            <li>Keep the reformulated model once all checks pass.</li>
+            <li>Reuse the same reformulated model to solve multiple instances with different data.</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+  </section>
+  <section class="tinted" id="numerical-results">
+    <div class="wrap benchmark-grid">
+      <div>
+        <span class="eyebrow">04 / Results</span>
+        <h2>How does LLM4MOR affect solve time?</h2>
+        <p>The evaluation compares Gurobi’s solve times before and after reformulation on 575 instances built from model files and data provided with MIPLIB 2017 (<a class="model-data-link" href="https://miplib.zib.de/download.html">Find models.zip ↗</a>). Gurobi uses the same settings for both runs, with a time limit of 3,600 seconds per run.</p>
+        <p>On hard instances (≥&nbsp;1,000&nbsp;s), the evaluation shows a <strong>6.9× solver speedup</strong> after reformulation.</p>
+        <div class="actions">
+          <a class="btn" href="results.html">View detailed results →</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Solver speedup by time group</h3>
+        <div class="speed-chart" role="img" aria-describedby="overview-speed-note" aria-label="Solver speedup by time group. At least 0 seconds 2.3 times, at least 10 seconds 3.8 times, at least 100 seconds 4.4 times, and at least 1,000 seconds 6.9 times.">
+          <div class="speed-row">
+            <span>≥ 0 s</span>
+            <div class="track"><div class="bar" style="width:29.32%"></div></div>
+            <b>2.3×</b>
+          </div>
+          <div class="speed-row">
+            <span>≥ 10 s</span>
+            <div class="track"><div class="bar" style="width:47.30%"></div></div>
+            <b>3.8×</b>
+          </div>
+          <div class="speed-row">
+            <span>≥ 100 s</span>
+            <div class="track"><div class="bar" style="width:54.87%"></div></div>
+            <b>4.4×</b>
+          </div>
+          <div class="speed-row">
+            <span>≥ 1,000 s</span>
+            <div class="track"><div class="bar" style="width:86.73%"></div></div>
+            <b>6.9×</b>
+          </div>
+        </div>
+        <p class="chart-note" id="overview-speed-note">The chart includes instances solved to optimality in at least one run. Time thresholds use the longer solve time in each pair.</p>
+      </div>
+    </div>
+  </section>
+
+<section id="cases">
+<div class="wrap">
+<div class="section-intro">
+<div><span class="eyebrow">05 / Case studies</span>
+<h2>What does reformulation change?</h2>
+</div>
+</div>
+<div class="case-gallery compact">
+  <a class="case-preview" href="case-studies.html#case1">
+    <div class="preview-body">
+      <span class="case-tag">ns3084303</span>
+      <h3>Vehicle routing with precedence constraints</h3>
+      <p>The reformulation tightens precedence constraints and reduces the number of rows.</p>
+      <div class="case-result">
+        <div><span class="case-result-label">Solve time</span><strong><span>≥ 3600 s</span> → 31 s</strong></div>
+        <span aria-hidden="true">↗</span>
+      </div>
+    </div>
+  </a>
+  <a class="case-preview" href="case-studies.html#case2">
+    <div class="preview-body">
+      <span class="case-tag">ns3025225</span>
+      <h3>Module placement on a grid</h3>
+      <p>The reformulation tightens the LP relaxation and reduces the number of binary variables and constraints.</p>
+      <div class="case-result">
+        <div><span class="case-result-label">Solve time</span><strong><span>386 s</span> → 21 s</strong></div>
+        <span aria-hidden="true">↗</span>
+      </div>
+    </div>
+  </a>
+</div>
+<div class="actions"><a class="btn text" href="case-studies.html">Explore both case studies →</a>
+</div>
+</div>
+</section>
+</main>
+<footer class="site-footer">
+<div class="wrap inner"><a class="brand" href="index.html">LLM4MOR</a><span>LLM for Mathematical Optimization Reformulation</span>
+<div class="footer-links"><a href="guide.html">User Guide</a><a href="https://github.com/ZhaoWeiWang0319/LLM4MOR.git">Source repository</a>
+</div>
+</div>
+</footer>
+</body>
+</html>
